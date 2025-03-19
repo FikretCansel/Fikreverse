@@ -480,13 +480,43 @@ socket.on('newPlayer', (playerData) => {
 socket.on('playerMoved', (playerData) => {
     const player = players.get(playerData.id);
     if (player && playerData.id !== socket.id) {
-        // Pozisyonu güncelle
-        const targetPosition = new THREE.Vector3(
+        // Son pozisyon ve yeni pozisyon arasındaki farkı hesapla
+        const newPosition = new THREE.Vector3(
             playerData.position.x,
-            playerData.position.y - PLAYER_HEIGHT * 1.5 + 1, // Karakteri yukarı kaldır
+            playerData.position.y - PLAYER_HEIGHT * 1.5 + 1,
             playerData.position.z
         );
-        player.mesh.position.lerp(targetPosition, 0.3);
+
+        // Hareket miktarını hesapla
+        if (player.lastPosition) {
+            const moveAmount = newPosition.distanceTo(player.lastPosition);
+            player.isMoving = moveAmount > 0.1; // Hareket eşiği
+
+            // Eğer hareket ediyorsa animasyonu güncelle
+            if (player.isMoving) {
+                player.animationTime += 0.1;
+                
+                // Yürüme animasyonu
+                player.leftLeg.rotation.x = Math.sin(player.animationTime * 5) * 0.4;
+                player.rightLeg.rotation.x = Math.sin(player.animationTime * 5 + Math.PI) * 0.4;
+                player.leftArm.rotation.x = Math.sin(player.animationTime * 5 + Math.PI) * 0.4;
+                player.rightArm.rotation.x = Math.sin(player.animationTime * 5) * 0.4;
+                player.cape.rotation.x = Math.sin(player.animationTime * 2) * 0.1;
+                player.cape.position.z = -0.6 - Math.abs(Math.sin(player.animationTime * 2) * 0.2);
+            } else {
+                // Hareket etmiyorsa uzuvları normal pozisyona getir
+                player.leftLeg.rotation.x = 0;
+                player.rightLeg.rotation.x = 0;
+                player.leftArm.rotation.x = 0;
+                player.rightArm.rotation.x = 0;
+                player.cape.rotation.x = 0;
+                player.cape.position.z = -0.6;
+            }
+        }
+
+        // Pozisyonu güncelle
+        player.mesh.position.lerp(newPosition, 0.3);
+        player.lastPosition = newPosition.clone();
 
         // Rotasyonu güncelle
         if (playerData.rotation) {
@@ -586,7 +616,7 @@ function addOtherPlayer(playerData) {
         leftArm: leftArm,
         rightArm: rightArm,
         cape: cape,
-        lastPosition: position.clone(),
+        lastPosition: null,
         isMoving: false,
         animationTime: 0
     });
