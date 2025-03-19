@@ -21,6 +21,7 @@ io.on('connection', (socket) => {
     players.set(socket.id, {
         id: socket.id,
         position: { ...SPAWN_POINT },
+        rotation: { y: 0 }, // Rotasyon bilgisini ekledik
         health: 100
     });
 
@@ -34,10 +35,12 @@ io.on('connection', (socket) => {
         const player = players.get(socket.id);
         if (player) {
             player.position = movementData.position;
+            player.rotation = movementData.rotation; // Rotasyonu kaydediyoruz
             // Hareket güncellemesini TÜM oyunculara gönder (broadcast yerine io.emit kullan)
             io.emit('playerMoved', {
                 id: socket.id,
-                position: player.position
+                position: player.position,
+                rotation: player.rotation // Rotasyonu da gönderiyoruz
             });
         }
     });

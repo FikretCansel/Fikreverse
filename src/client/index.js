@@ -444,19 +444,20 @@ function animate() {
             canJump = true;
         }
 
-        // Oyuncu modelini kamera pozisyonuna göre güncelle ve yönünü ayarla
+        // Oyuncu modelini kamera pozisyonuna göre güncelle
         playerMesh.position.copy(camera.position);
-        playerMesh.position.y -= PLAYER_HEIGHT * 1.5; // Karakteri biraz daha aşağı al
-        
-        // Karakterin yönünü hareket yönüne çevir
-        if (velocity.x !== 0 || velocity.z !== 0) {
-            const angle = Math.atan2(velocity.x, velocity.z);
-            playerMesh.rotation.y = angle;
-        }
+        playerMesh.position.y -= PLAYER_HEIGHT * 1.5;
 
-        // Oyuncu pozisyonunu sunucuya gönder
+        // Kamera yönünü al ve karakteri döndür
+        const cameraDirection = new THREE.Vector3();
+        camera.getWorldDirection(cameraDirection);
+        const rotation = Math.atan2(cameraDirection.x, cameraDirection.z);
+        playerMesh.rotation.y = rotation;
+
+        // Oyuncu pozisyonunu ve rotasyonunu sunucuya gönder
         socket.emit('playerMovement', {
-            position: camera.position.clone()
+            position: camera.position.clone(),
+            rotation: { y: rotation }
         });
     }
 
@@ -478,8 +479,19 @@ socket.on('newPlayer', (playerData) => {
 
 socket.on('playerMoved', (playerData) => {
     const player = players.get(playerData.id);
-    if (player) {
-        player.mesh.position.copy(playerData.position);
+    if (player && playerData.id !== socket.id) {
+        // Pozisyonu güncelle
+        const targetPosition = new THREE.Vector3(
+            playerData.position.x,
+            playerData.position.y - PLAYER_HEIGHT * 1.5,
+            playerData.position.z
+        );
+        player.mesh.position.lerp(targetPosition, 0.3);
+
+        // Rotasyonu güncelle
+        if (playerData.rotation) {
+            player.mesh.rotation.y = playerData.rotation.y;
+        }
     }
 });
 
