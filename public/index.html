@@ -28,6 +28,18 @@
             border-radius: 10px;
             display: none;
         }
+        #localVideo {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 160px;
+            height: 120px;
+            border-radius: 8px;
+            z-index: 100;
+        }
+        #remoteVideos {
+            display: none; /* Video dokuları için gizli video elementleri */
+        }
     </style>
 </head>
 <body>
@@ -39,7 +51,10 @@
         Sol Tık: Saldır<br>
         Space: Zıpla</p>
         <p>Başlamak için tıkla</p>
+        <p>Not: Oyuna başlamak için kamera izni vermeniz gerekiyor</p>
     </div>
+    <video id="localVideo" autoplay muted playsinline></video>
+    <div id="remoteVideos"></div>
     <script src="/socket.io/socket.io.js"></script>
     <script src="bundle.js"></script>
 </body>

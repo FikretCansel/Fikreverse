@@ -25,10 +25,16 @@ const players = new Map();
 const objects = [];
 let playerMesh;
 
+// WebRTC ve video değişkenleri
+let localStream;
+const peerConnections = new Map();
+const videoElements = new Map();
+const videoTextures = new Map();
+
 init();
 animate();
 
-function init() {
+async function init() {
     // Sahne oluşturma
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87ceeb); // Gökyüzü mavisi
@@ -119,6 +125,20 @@ function init() {
 
     // Başlangıç pozisyonunu yerden başlat
     camera.position.y = PLAYER_HEIGHT;
+
+    // Video akışını başlat
+    try {
+        localStream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                width: 320,
+                height: 240,
+                frameRate: { ideal: 15, max: 24 }
+            }
+        });
+        document.getElementById('localVideo').srcObject = localStream;
+    } catch (err) {
+        console.error('Kamera erişim hatası:', err);
+    }
 }
 
 function createPlayerMesh() {
@@ -191,6 +211,10 @@ function createPlayerMesh() {
     logo.position.y = 2.5;
     logo.position.z = 0.6;
     character.add(logo);
+
+    // Video paneli ekle
+    const videoPanel = createVideoPanel();
+    character.add(videoPanel);
 
     playerMesh = character;
     scene.add(playerMesh);
@@ -459,6 +483,18 @@ function animate() {
             position: camera.position.clone(),
             rotation: { y: rotation }
         });
+
+        // Video panellerini kameraya döndür
+        players.forEach((player) => {
+            if (player.videoPanel) {
+                const cameraPosition = camera.position.clone();
+                player.videoPanel.lookAt(cameraPosition);
+                // Video dokusunu güncelle
+                if (player.videoPanel.material.map) {
+                    player.videoPanel.material.map.needsUpdate = true;
+                }
+            }
+        });
     }
 
     renderer.render(scene, camera);
@@ -537,6 +573,21 @@ socket.on('playerDisconnected', (playerId) => {
         scene.remove(player.mesh);
         players.delete(playerId);
     }
+
+    // Video bağlantısını temizle
+    const peerConnection = peerConnections.get(playerId);
+    if (peerConnection) {
+        peerConnection.close();
+        peerConnections.delete(playerId);
+    }
+    
+    const videoElement = videoElements.get(playerId);
+    if (videoElement) {
+        videoElement.remove();
+        videoElements.delete(playerId);
+    }
+    
+    videoTextures.delete(playerId);
 });
 
 function addOtherPlayer(playerData) {
@@ -598,6 +649,10 @@ function addOtherPlayer(playerData) {
     rightLeg.position.y = 0.75;
     character.add(rightLeg);
 
+    // Video paneli ekle
+    const videoPanel = createVideoPanel();
+    character.add(videoPanel);
+
     // Pozisyonu ayarla ve karakteri yukarı kaldır
     const position = new THREE.Vector3(
         playerData.position.x,
@@ -618,6 +673,154 @@ function addOtherPlayer(playerData) {
         cape: cape,
         lastPosition: null,
         isMoving: false,
-        animationTime: 0
+        animationTime: 0,
+        videoPanel: videoPanel
     });
+
+    // Video bağlantısını başlat
+    setupPeerConnection(playerData.id);
 }
+
+function createVideoPanel() {
+    const geometry = new THREE.PlaneGeometry(2, 1.5);
+    const material = new THREE.MeshBasicMaterial({ 
+        transparent: true,
+        opacity: 0.9,
+        side: THREE.DoubleSide
+    });
+    const panel = new THREE.Mesh(geometry, material);
+    panel.position.y = 5; // Karakterin üstünde
+    panel.rotation.y = Math.PI; // Paneli doğru yöne çevir
+    return panel;
+}
+
+async function setupPeerConnection(targetId) {
+    if (peerConnections.has(targetId)) return;
+
+    console.log('Video bağlantısı kuruluyor:', targetId);
+
+    const peerConnection = new RTCPeerConnection({
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun3.l.google.com:19302' },
+            { urls: 'stun:stun4.l.google.com:19302' }
+        ]
+    });
+
+    peerConnections.set(targetId, peerConnection);
+
+    // Video akışını ekle
+    if (localStream) {
+        try {
+            localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localStream);
+                console.log('Video track eklendi');
+            });
+        } catch (err) {
+            console.error('Track ekleme hatası:', err);
+        }
+    }
+
+    // Video elementi oluştur
+    const videoElement = document.createElement('video');
+    videoElement.autoplay = true;
+    videoElement.playsinline = true;
+    document.getElementById('remoteVideos').appendChild(videoElement);
+    videoElements.set(targetId, videoElement);
+
+    // Video dokusu oluştur
+    const videoTexture = new THREE.VideoTexture(videoElement);
+    videoTexture.minFilter = THREE.LinearFilter;
+    videoTexture.magFilter = THREE.LinearFilter;
+    videoTextures.set(targetId, videoTexture);
+
+    // Video panelini güncelle
+    const player = players.get(targetId);
+    if (player && player.videoPanel) {
+        player.videoPanel.material.map = videoTexture;
+        player.videoPanel.material.needsUpdate = true;
+        console.log('Video dokusu panele eklendi');
+    }
+
+    // ICE aday olaylarını dinle
+    peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+            console.log('ICE aday gönderiliyor');
+            socket.emit('new-ice-candidate', event.candidate, targetId);
+        }
+    };
+
+    // ICE bağlantı durumunu izle
+    peerConnection.oniceconnectionstatechange = () => {
+        console.log('ICE bağlantı durumu:', peerConnection.iceConnectionState);
+    };
+
+    // Uzak video akışını al
+    peerConnection.ontrack = (event) => {
+        console.log('Uzak video akışı alındı');
+        videoElement.srcObject = event.streams[0];
+        
+        const player = players.get(targetId);
+        if (player && player.videoPanel) {
+            // Video hazır olduğunda dokuyu güncelle
+            videoElement.onloadedmetadata = () => {
+                player.videoPanel.material.map = videoTexture;
+                player.videoPanel.material.needsUpdate = true;
+                console.log('Video dokusu güncellendi');
+            };
+        }
+    };
+
+    try {
+        const offer = await peerConnection.createOffer({
+            offerToReceiveVideo: true,
+            offerToReceiveAudio: false
+        });
+        await peerConnection.setLocalDescription(offer);
+        console.log('Teklif gönderiliyor');
+        socket.emit('video-offer', offer, targetId);
+    } catch (err) {
+        console.error('Teklif oluşturma hatası:', err);
+    }
+
+    return peerConnection;
+}
+
+// Socket.io video olayları
+socket.on('video-offer', async (offer, fromId) => {
+    console.log('Video teklifi alındı:', fromId);
+    const peerConnection = await setupPeerConnection(fromId);
+    try {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        socket.emit('video-answer', answer, fromId);
+    } catch (err) {
+        console.error('Teklif yanıtlama hatası:', err);
+    }
+});
+
+socket.on('video-answer', async (answer, fromId) => {
+    console.log('Video yanıtı alındı:', fromId);
+    const peerConnection = peerConnections.get(fromId);
+    if (peerConnection) {
+        try {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+        } catch (err) {
+            console.error('Yanıt ayarlama hatası:', err);
+        }
+    }
+});
+
+socket.on('new-ice-candidate', async (candidate, fromId) => {
+    const peerConnection = peerConnections.get(fromId);
+    if (peerConnection) {
+        try {
+            await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (err) {
+            console.error('ICE aday ekleme hatası:', err);
+        }
+    }
+});

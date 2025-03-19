@@ -31,6 +31,19 @@ io.on('connection', (socket) => {
     // Yeni oyuncuyu diğer oyunculara bildir
     socket.broadcast.emit('newPlayer', players.get(socket.id));
 
+    // WebRTC sinyalleşme
+    socket.on('video-offer', (offer, targetId) => {
+        socket.to(targetId).emit('video-offer', offer, socket.id);
+    });
+
+    socket.on('video-answer', (answer, targetId) => {
+        socket.to(targetId).emit('video-answer', answer, socket.id);
+    });
+
+    socket.on('new-ice-candidate', (candidate, targetId) => {
+        socket.to(targetId).emit('new-ice-candidate', candidate, socket.id);
+    });
+
     socket.on('playerMovement', (movementData) => {
         const player = players.get(socket.id);
         if (player) {
