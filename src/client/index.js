@@ -483,7 +483,7 @@ socket.on('playerMoved', (playerData) => {
         // Pozisyonu güncelle
         const targetPosition = new THREE.Vector3(
             playerData.position.x,
-            playerData.position.y - PLAYER_HEIGHT * 1.5,
+            playerData.position.y - PLAYER_HEIGHT * 1.5 + 1, // Karakteri yukarı kaldır
             playerData.position.z
         );
         player.mesh.position.lerp(targetPosition, 0.3);
@@ -568,11 +568,26 @@ function addOtherPlayer(playerData) {
     rightLeg.position.y = 0.75;
     character.add(rightLeg);
 
-    character.position.copy(playerData.position);
+    // Pozisyonu ayarla ve karakteri yukarı kaldır
+    const position = new THREE.Vector3(
+        playerData.position.x,
+        playerData.position.y - PLAYER_HEIGHT * 1.5 + 1, // Karakteri yukarı kaldır
+        playerData.position.z
+    );
+    character.position.copy(position);
     scene.add(character);
 
+    // Oyuncuyu kaydet
     players.set(playerData.id, {
         id: playerData.id,
-        mesh: character
+        mesh: character,
+        leftLeg: leftLeg,
+        rightLeg: rightLeg,
+        leftArm: leftArm,
+        rightArm: rightArm,
+        cape: cape,
+        lastPosition: position.clone(),
+        isMoving: false,
+        animationTime: 0
     });
 }
