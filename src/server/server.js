@@ -31,6 +31,15 @@ io.on('connection', (socket) => {
     // Yeni oyuncuyu diğer oyunculara bildir
     socket.broadcast.emit('newPlayer', players.get(socket.id));
 
+    // Video stream olayı
+    socket.on('video-stream', (imageData) => {
+        // Video görüntüsünü diğer oyunculara ilet
+        socket.broadcast.emit('video-stream', {
+            id: socket.id,
+            imageData: imageData
+        });
+    });
+
     // WebRTC sinyalleşme
     socket.on('video-offer', (offer, targetId) => {
         socket.to(targetId).emit('video-offer', offer, socket.id);

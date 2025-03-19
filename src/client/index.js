@@ -27,9 +27,10 @@ let playerMesh;
 
 // WebRTC ve video değişkenleri
 let localStream;
-const peerConnections = new Map();
-const videoElements = new Map();
+let videoCanvas;
+let videoContext;
 const videoTextures = new Map();
+const VIDEO_UPDATE_RATE = 100; // Her 100ms'de bir video güncellemesi
 
 init();
 animate();
@@ -132,10 +133,19 @@ async function init() {
             video: { 
                 width: 320,
                 height: 240,
-                frameRate: { ideal: 15, max: 24 }
+                frameRate: { ideal: 10, max: 15 }
             }
         });
         document.getElementById('localVideo').srcObject = localStream;
+
+        // Video canvas'ı oluştur
+        videoCanvas = document.createElement('canvas');
+        videoCanvas.width = 320;
+        videoCanvas.height = 240;
+        videoContext = videoCanvas.getContext('2d');
+
+        // Video stream göndermeyi başlat
+        setInterval(sendVideoFrame, VIDEO_UPDATE_RATE);
     } catch (err) {
         console.error('Kamera erişim hatası:', err);
     }
@@ -575,12 +585,6 @@ socket.on('playerDisconnected', (playerId) => {
     }
 
     // Video bağlantısını temizle
-    const peerConnection = peerConnections.get(playerId);
-    if (peerConnection) {
-        peerConnection.close();
-        peerConnections.delete(playerId);
-    }
-    
     const videoElement = videoElements.get(playerId);
     if (videoElement) {
         videoElement.remove();
@@ -676,151 +680,49 @@ function addOtherPlayer(playerData) {
         animationTime: 0,
         videoPanel: videoPanel
     });
-
-    // Video bağlantısını başlat
-    setupPeerConnection(playerData.id);
 }
 
 function createVideoPanel() {
     const geometry = new THREE.PlaneGeometry(2, 1.5);
+    const texture = new THREE.Texture();
     const material = new THREE.MeshBasicMaterial({ 
+        map: texture,
         transparent: true,
         opacity: 0.9,
         side: THREE.DoubleSide
     });
     const panel = new THREE.Mesh(geometry, material);
-    panel.position.y = 5; // Karakterin üstünde
-    panel.rotation.y = Math.PI; // Paneli doğru yöne çevir
+    panel.position.y = 5;
     return panel;
 }
 
-async function setupPeerConnection(targetId) {
-    if (peerConnections.has(targetId)) return;
+function sendVideoFrame() {
+    if (!localStream || !videoContext) return;
 
-    console.log('Video bağlantısı kuruluyor:', targetId);
-
-    const peerConnection = new RTCPeerConnection({
-        iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' },
-            { urls: 'stun:stun3.l.google.com:19302' },
-            { urls: 'stun:stun4.l.google.com:19302' }
-        ]
-    });
-
-    peerConnections.set(targetId, peerConnection);
-
-    // Video akışını ekle
-    if (localStream) {
-        try {
-            localStream.getTracks().forEach(track => {
-                peerConnection.addTrack(track, localStream);
-                console.log('Video track eklendi');
-            });
-        } catch (err) {
-            console.error('Track ekleme hatası:', err);
-        }
+    const video = document.getElementById('localVideo');
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        videoContext.drawImage(video, 0, 0, videoCanvas.width, videoCanvas.height);
+        const imageData = videoCanvas.toDataURL('image/jpeg', 0.5);
+        socket.emit('video-stream', imageData);
     }
-
-    // Video elementi oluştur
-    const videoElement = document.createElement('video');
-    videoElement.autoplay = true;
-    videoElement.playsinline = true;
-    document.getElementById('remoteVideos').appendChild(videoElement);
-    videoElements.set(targetId, videoElement);
-
-    // Video dokusu oluştur
-    const videoTexture = new THREE.VideoTexture(videoElement);
-    videoTexture.minFilter = THREE.LinearFilter;
-    videoTexture.magFilter = THREE.LinearFilter;
-    videoTextures.set(targetId, videoTexture);
-
-    // Video panelini güncelle
-    const player = players.get(targetId);
-    if (player && player.videoPanel) {
-        player.videoPanel.material.map = videoTexture;
-        player.videoPanel.material.needsUpdate = true;
-        console.log('Video dokusu panele eklendi');
-    }
-
-    // ICE aday olaylarını dinle
-    peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-            console.log('ICE aday gönderiliyor');
-            socket.emit('new-ice-candidate', event.candidate, targetId);
-        }
-    };
-
-    // ICE bağlantı durumunu izle
-    peerConnection.oniceconnectionstatechange = () => {
-        console.log('ICE bağlantı durumu:', peerConnection.iceConnectionState);
-    };
-
-    // Uzak video akışını al
-    peerConnection.ontrack = (event) => {
-        console.log('Uzak video akışı alındı');
-        videoElement.srcObject = event.streams[0];
-        
-        const player = players.get(targetId);
-        if (player && player.videoPanel) {
-            // Video hazır olduğunda dokuyu güncelle
-            videoElement.onloadedmetadata = () => {
-                player.videoPanel.material.map = videoTexture;
-                player.videoPanel.material.needsUpdate = true;
-                console.log('Video dokusu güncellendi');
-            };
-        }
-    };
-
-    try {
-        const offer = await peerConnection.createOffer({
-            offerToReceiveVideo: true,
-            offerToReceiveAudio: false
-        });
-        await peerConnection.setLocalDescription(offer);
-        console.log('Teklif gönderiliyor');
-        socket.emit('video-offer', offer, targetId);
-    } catch (err) {
-        console.error('Teklif oluşturma hatası:', err);
-    }
-
-    return peerConnection;
 }
 
-// Socket.io video olayları
-socket.on('video-offer', async (offer, fromId) => {
-    console.log('Video teklifi alındı:', fromId);
-    const peerConnection = await setupPeerConnection(fromId);
-    try {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-        socket.emit('video-answer', answer, fromId);
-    } catch (err) {
-        console.error('Teklif yanıtlama hatası:', err);
-    }
-});
-
-socket.on('video-answer', async (answer, fromId) => {
-    console.log('Video yanıtı alındı:', fromId);
-    const peerConnection = peerConnections.get(fromId);
-    if (peerConnection) {
-        try {
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-        } catch (err) {
-            console.error('Yanıt ayarlama hatası:', err);
-        }
-    }
-});
-
-socket.on('new-ice-candidate', async (candidate, fromId) => {
-    const peerConnection = peerConnections.get(fromId);
-    if (peerConnection) {
-        try {
-            await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-        } catch (err) {
-            console.error('ICE aday ekleme hatası:', err);
-        }
+// Socket.io video olayı
+socket.on('video-stream', (data) => {
+    const player = players.get(data.id);
+    if (player && player.videoPanel) {
+        // Base64 görüntüyü texture'a dönüştür
+        const image = new Image();
+        image.onload = function() {
+            if (!videoTextures.has(data.id)) {
+                videoTextures.set(data.id, new THREE.Texture(image));
+            }
+            const texture = videoTextures.get(data.id);
+            texture.image = image;
+            texture.needsUpdate = true;
+            player.videoPanel.material.map = texture;
+            player.videoPanel.material.needsUpdate = true;
+        };
+        image.src = data.imageData;
     }
 });
