@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fantastik Evren</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+        #health {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-family: Arial;
+            font-size: 20px;
+            z-index: 100;
+        }
+        #instructions {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-family: Arial;
+            font-size: 16px;
+            text-align: center;
+            background: rgba(0,0,0,0.7);
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="health">Sağlık: 100</div>
+    <div id="instructions">
+        <h2>Kontroller</h2>
+        <p>W,A,S,D: Hareket<br>
+        Fare: Etrafına bak<br>
+        Sol Tık: Saldır<br>
+        Space: Zıpla</p>
+        <p>Başlamak için tıkla</p>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="bundle.js"></script>
+</body>
+</html>
