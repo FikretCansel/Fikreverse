@@ -68,6 +68,12 @@ async function init() {
     const playerNameInput = document.getElementById('playerName');
     const instructions = document.getElementById('instructions');
 
+    // LocalStorage'dan kullanıcı adını kontrol et
+    const savedName = localStorage.getItem('playerName');
+    if (savedName) {
+        playerNameInput.value = savedName;
+    }
+
     // Sahne oluşturma
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87ceeb); // Gökyüzü mavisi
@@ -108,6 +114,8 @@ async function init() {
     startButton.addEventListener('click', async () => {
         const name = playerNameInput.value.trim();
         if (name) {
+            // İsmi localStorage'a kaydet
+            localStorage.setItem('playerName', name);
             playerName = name;
             loginForm.style.display = 'none';
             instructions.style.display = '';
