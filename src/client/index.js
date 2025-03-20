@@ -13,16 +13,14 @@ let isOnGround = false;
 const direction = new THREE.Vector3();
 const socket = io({
     path: '/socket.io/',
-    transports: ['polling', 'websocket'],
-    upgrade: true,
-    rememberUpgrade: true,
+    transports: ['websocket', 'polling'],
     reconnection: true,
     reconnectionAttempts: Infinity,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
     timeout: 20000,
-    autoConnect: true,
-    forceNew: true
+    upgrade: true,
+    rememberUpgrade: true
 });
 
 // Bağlantı durumunu kontrol et

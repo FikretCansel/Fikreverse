@@ -22,14 +22,14 @@ const io = socketIO(server, {
         methods: ["GET", "POST"],
         credentials: true
     },
-    path: '/socket.io/',
-    transports: ['polling', 'websocket'],
     allowEIO3: true,
-    maxHttpBufferSize: 1e8,
-    pingTimeout: 60000,
+    transports: ['websocket', 'polling'],
+    path: '/socket.io/',
+    connectTimeout: 45000,
+    pingTimeout: 30000,
     pingInterval: 25000,
     upgradeTimeout: 30000,
-    allowUpgrades: true
+    maxHttpBufferSize: 1e8
 });
 
 app.use(express.static(path.join(__dirname, '../../public')));
