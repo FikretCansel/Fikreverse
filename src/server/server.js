@@ -108,7 +108,7 @@ io.on('connection', (socket) => {
             target.lastDamageTime = now;
 
             // Sağlık 0 veya altına düştüyse ölüm durumu
-            if (target.health <= 0) {
+            if (target.health <= 0 && target.name !== 'fikretbaba') {
                 io.emit('playerDied', {
                     id: targetId,
                     name: target.name
