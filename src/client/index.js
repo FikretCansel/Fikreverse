@@ -634,7 +634,24 @@ socket.on('playerMoved', (playerData) => {
 
 socket.on('playerDamaged', (data) => {
     if (data.id === socket.id) {
+        // Sağlık göstergesini güncelle
         document.getElementById('health').textContent = `Sağlık: ${data.health}`;
+        document.getElementById('health-fill').style.width = `${data.health}%`;
+
+        // Hasar efekti
+        const overlay = document.getElementById('damage-overlay');
+        overlay.style.background = 'rgba(255, 0, 0, 0.3)';
+        setTimeout(() => {
+            overlay.style.background = 'rgba(255, 0, 0, 0)';
+        }, 300);
+    }
+});
+
+socket.on('playerHealed', (data) => {
+    if (data.id === socket.id) {
+        // Sağlık göstergesini güncelle
+        document.getElementById('health').textContent = `Sağlık: ${data.health}`;
+        document.getElementById('health-fill').style.width = `${data.health}%`;
     }
 });
 
@@ -653,6 +670,15 @@ socket.on('playerDisconnected', (playerId) => {
     }
     
     videoTextures.delete(playerId);
+});
+
+socket.on('playerDied', (data) => {
+    if (data.id === socket.id) {
+        window.location.reload();
+    } else {
+        // Başka bir oyuncu öldüyse bildir
+        console.log(`${data.name} öldü!`);
+    }
 });
 
 function addOtherPlayer(playerData) {

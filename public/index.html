@@ -70,9 +70,44 @@
         #loginForm button:hover {
             background: #45a049;
         }
+        #damage-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 0, 0, 0);
+            pointer-events: none;
+            transition: background 0.3s ease;
+            z-index: 99;
+        }
+
+        #health-bar {
+            position: fixed;
+            top: 50px;
+            left: 20px;
+            width: 200px;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            z-index: 100;
+        }
+
+        #health-fill {
+            width: 100%;
+            height: 100%;
+            background: #4CAF50;
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
 <body>
+    <div id="damage-overlay"></div>
+    <div id="health-bar">
+        <div id="health-fill"></div>
+    </div>
     <div id="loginForm">
         <h2>Oyuna Katıl</h2>
         <input type="text" id="playerName" placeholder="İsminizi girin" maxlength="15">

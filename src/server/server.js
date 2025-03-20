@@ -53,7 +53,8 @@ io.on('connection', (socket) => {
             name: playerName,
             position: { ...SPAWN_POINT },
             rotation: { y: 0 },
-            health: 100
+            health: 100,
+            lastDamageTime: 0
         });
 
         // Mevcut oyuncuları yeni oyuncuya gönder
@@ -102,15 +103,44 @@ io.on('connection', (socket) => {
     socket.on('attack', (targetId) => {
         const target = players.get(targetId);
         if (target) {
+            const now = Date.now();
             target.health -= 10;
-            io.emit('playerDamaged', {
-                id: targetId,
-                health: target.health
-            });
+            target.lastDamageTime = now;
+
+            // Sağlık 0 veya altına düştüyse ölüm durumu
+            if (target.health <= 0) {
+                io.emit('playerDied', {
+                    id: targetId,
+                    name: target.name
+                });
+            } else {
+                io.emit('playerDamaged', {
+                    id: targetId,
+                    health: target.health,
+                    timestamp: now
+                });
+            }
         }
     });
 
+    // Sağlık rejenerasyonu için interval
+    const healthRegenInterval = setInterval(() => {
+        const player = players.get(socket.id);
+        if (player && player.health < 100) {
+            const now = Date.now();
+            // Son hasardan 3 saniye sonra iyileşmeye başla
+            if (now - player.lastDamageTime > 3000) {
+                player.health = Math.min(100, player.health + 5);
+                io.emit('playerHealed', {
+                    id: socket.id,
+                    health: player.health
+                });
+            }
+        }
+    }, 1000); // Her saniye kontrol et
+
     socket.on('disconnect', () => {
+        clearInterval(healthRegenInterval);
         console.log('Oyuncu ayrıldı:', socket.id);
         players.delete(socket.id);
         io.emit('playerDisconnected', socket.id);
