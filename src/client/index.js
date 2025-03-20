@@ -58,6 +58,9 @@ const VIDEO_UPDATE_RATE = 100; // Her 100ms'de bir video güncellemesi
 
 let playerName = '';
 
+let fikretMesh;
+let playerScore = 0;
+
 init();
 animate();
 
@@ -187,6 +190,8 @@ async function init() {
             controls.lock();
         }
     });
+
+    updateScoreDisplay(); // Puan göstergesini oluştur
 }
 
 function createNameTag(name) {
@@ -425,6 +430,9 @@ function onKeyDown(event) {
                 velocity.y = JUMP_FORCE;
                 canJump = false;
             }
+            break;
+        case 'KeyE':
+            checkFikretInteraction();
             break;
     }
 }
@@ -689,6 +697,27 @@ socket.on('playerDied', (data) => {
     }
 });
 
+socket.on('fikretPosition', (data) => {
+    if (fikretMesh) {
+        scene.remove(fikretMesh);
+    }
+    fikretMesh = createFikretNPC(data.position);
+});
+
+socket.on('fikretMoved', (data) => {
+    if (fikretMesh) {
+        scene.remove(fikretMesh);
+    }
+    fikretMesh = createFikretNPC(data.position);
+});
+
+socket.on('scoreUpdated', (data) => {
+    if (data.playerId === socket.id) {
+        playerScore = data.score;
+        updateScoreDisplay();
+    }
+});
+
 function addOtherPlayer(playerData) {
     // Diğer oyuncular için de aynı süper kahraman modelini kullan
     const character = new THREE.Group();
@@ -895,3 +924,61 @@ socket.on('worldObjects', (worldData) => {
         createCVPoint(point.position, point.title, point.content);
     });
 });
+
+// Fikret NPC'sini oluştur
+function createFikretNPC(position) {
+    const character = new THREE.Group();
+    character.scale.set(0.5, 0.5, 0.5);
+
+    // Vücut (parlak turuncu kostüm)
+    const bodyGeometry = new THREE.BoxGeometry(1.5, 2, 1);
+    const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0xFF6600 });
+    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    body.position.y = 2;
+    character.add(body);
+
+    // Kafa (altın rengi)
+    const headGeometry = new THREE.SphereGeometry(0.5, 16, 16);
+    const headMaterial = new THREE.MeshPhongMaterial({ color: 0xFFD700 });
+    const head = new THREE.Mesh(headGeometry, headMaterial);
+    head.position.y = 3.25;
+    character.add(head);
+
+    // İsim etiketi
+    const nameTag = createNameTag("Fikret (E ile etkileşim)");
+    character.add(nameTag);
+
+    // Pozisyonu ayarla
+    character.position.set(position.x, position.y, position.z);
+    scene.add(character);
+
+    return character;
+}
+
+// Puan göstergesini güncelle
+function updateScoreDisplay() {
+    const scoreElement = document.getElementById('score');
+    if (!scoreElement) {
+        const div = document.createElement('div');
+        div.id = 'score';
+        div.style.position = 'fixed';
+        div.style.top = '80px';
+        div.style.left = '20px';
+        div.style.color = 'white';
+        div.style.fontFamily = 'Arial';
+        div.style.fontSize = '20px';
+        div.style.zIndex = '100';
+        document.body.appendChild(div);
+    }
+    document.getElementById('score').textContent = `Puan: ${playerScore}`;
+}
+
+// Fikret ile etkileşim kontrolü
+function checkFikretInteraction() {
+    if (!fikretMesh) return;
+    
+    const distance = camera.position.distanceTo(fikretMesh.position);
+    if (distance < 5) { // 5 birim mesafe içindeyse
+        socket.emit('offerToFikret');
+    }
+}

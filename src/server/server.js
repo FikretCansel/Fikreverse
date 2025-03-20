@@ -40,6 +40,23 @@ const players = new Map();
 // Sabit spawn noktası
 const SPAWN_POINT = { x: 0, y: 2, z: 0 };
 
+// Fikret NPC'sinin pozisyonunu rastgele belirle
+function getRandomPosition() {
+    return {
+        x: -150 + Math.random() * 300,
+        y: 2,
+        z: -150 + Math.random() * 300
+    };
+}
+
+// Fikret NPC'si
+let fikretNPC = {
+    position: getRandomPosition(),
+    id: 'fikret-npc'
+};
+
+const playerScores = new Map(); // Oyuncu puanlarını tutacak map
+
 io.on('connection', (socket) => {
     console.log('Oyuncu bağlandı:', socket.id);
     
@@ -54,11 +71,15 @@ io.on('connection', (socket) => {
             position: { ...SPAWN_POINT },
             rotation: { y: 0 },
             health: 100,
-            lastDamageTime: 0
+            lastDamageTime: 0,
+            score: 0 // Puan sistemi için yeni alan
         });
 
         // Mevcut oyuncuları yeni oyuncuya gönder
         socket.emit('currentPlayers', Array.from(players.values()));
+        
+        // Fikret NPC'sinin pozisyonunu gönder
+        socket.emit('fikretPosition', fikretNPC);
         
         // Yeni oyuncuyu diğer oyunculara bildir
         socket.broadcast.emit('newPlayer', players.get(socket.id));
@@ -120,6 +141,25 @@ io.on('connection', (socket) => {
                     timestamp: now
                 });
             }
+        }
+    });
+
+    // Fikret'e teklif yapma
+    socket.on('offerToFikret', () => {
+        const player = players.get(socket.id);
+        if (player) {
+            // Oyuncunun puanını artır
+            player.score = (player.score || 0) + 1;
+            
+            // Fikret'i yeni konuma taşı
+            fikretNPC.position = getRandomPosition();
+            
+            // Tüm oyunculara güncel pozisyonu ve puanı bildir
+            io.emit('fikretMoved', fikretNPC);
+            io.emit('scoreUpdated', {
+                playerId: socket.id,
+                score: player.score
+            });
         }
     });
 
