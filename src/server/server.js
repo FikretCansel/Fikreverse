@@ -220,6 +220,9 @@ io.on('connection', (socket) => {
                 .sort((a, b) => b.score - a.score)
                 .slice(0, 5);
             
+            // Tüm oyunculara gülme sesini çal
+            io.emit('playSound');
+            
             // Tüm oyunculara güncel pozisyonu, puanı ve en yüksek skorları bildir
             io.emit('fikretMoved', fikretNPC);
             io.emit('scoreUpdated', {

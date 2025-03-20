@@ -797,14 +797,14 @@ socket.on('fikretMoved', (data) => {
 
 socket.on('scoreUpdated', (data) => {
     if (data.playerId === socket.id) {
-        const oldScore = playerScore;
         playerScore = data.score;
-        if (playerScore > oldScore) {
-            scoreSound.currentTime = 0;
-            scoreSound.play();
-        }
         updateScoreDisplay();
     }
+});
+
+socket.on('playSound', () => {
+    scoreSound.currentTime = 0;
+    scoreSound.play();
 });
 
 socket.on('topScores', (scores) => {
