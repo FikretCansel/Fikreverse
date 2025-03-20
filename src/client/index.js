@@ -39,7 +39,8 @@ socket.on('disconnect', (reason) => {
 // Fizik değişkenleri
 const GRAVITY = -30;
 const JUMP_FORCE = 12;
-const WALK_SPEED = 150;
+const WALK_SPEED = 150; // Hızı artırdık
+const FRICTION = 5.0;  // Sürtünmeyi azalttık
 const PLAYER_HEIGHT = 2;
 const raycaster = new THREE.Raycaster();
 
@@ -480,8 +481,8 @@ function animate() {
         }
 
         // Yatay hareket
-        velocity.x -= velocity.x * 10.0 * delta;
-        velocity.z -= velocity.z * 10.0 * delta;
+        velocity.x -= velocity.x * FRICTION * delta;
+        velocity.z -= velocity.z * FRICTION * delta;
 
         direction.z = Number(moveForward) - Number(moveBackward);
         direction.x = Number(moveLeft) - Number(moveRight); // Değişiklik burada: moveRight ve moveLeft'in yerlerini değiştirdik
