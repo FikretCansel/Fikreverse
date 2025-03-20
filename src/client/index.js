@@ -12,8 +12,27 @@ let velocity = new THREE.Vector3();
 let isOnGround = false;
 const direction = new THREE.Vector3();
 const socket = io({
-    transports: ['websocket'],
-    upgrade: false
+    transports: ['websocket', 'polling'],
+    upgrade: true,
+    rememberUpgrade: true,
+    secure: true,
+    reconnection: true,
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000,
+    timeout: 20000
+});
+
+// Bağlantı durumunu kontrol et
+socket.on('connect', () => {
+    console.log('Socket.IO bağlantısı kuruldu');
+});
+
+socket.on('connect_error', (error) => {
+    console.error('Socket.IO bağlantı hatası:', error);
+});
+
+socket.on('disconnect', (reason) => {
+    console.log('Socket.IO bağlantısı kesildi:', reason);
 });
 
 // Fizik değişkenleri

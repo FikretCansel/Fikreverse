@@ -10,9 +10,14 @@ const server = http.createServer(app);
 const io = socketIO(server, {
     cors: {
         origin: "*",
-        methods: ["GET", "POST"]
+        methods: ["GET", "POST"],
+        credentials: true,
+        allowedHeaders: ["content-type"]
     },
-    transports: ['websocket']
+    transports: ['websocket', 'polling'],
+    allowEIO3: true,
+    pingTimeout: 20000,
+    pingInterval: 25000
 });
 
 app.use(express.static(path.join(__dirname, '../../public')));
