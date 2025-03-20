@@ -94,26 +94,6 @@ async function init() {
     scene.add(ground);
     objects.push(ground);
 
-    // Rastgele ağaçlar ve kayalar ekle
-    for (let i = 0; i < 100; i++) {
-        const isTree = Math.random() > 0.5;
-        if (isTree) {
-            const tree = createTree(
-                Math.random() * 200 - 100,
-                0,
-                Math.random() * 200 - 100
-            );
-            objects.push(tree);
-        } else {
-            const rock = createRock(
-                Math.random() * 200 - 100,
-                0,
-                Math.random() * 200 - 100
-            );
-            objects.push(rock);
-        }
-    }
-
     // Renderer ayarları
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -360,12 +340,13 @@ function createTree(x, y, z) {
     return tree;
 }
 
-function createRock(x, y, z) {
+function createRock(x, y, z, scale = 1) {
     const geometry = new THREE.DodecahedronGeometry(Math.random() * 2 + 1);
     const material = new THREE.MeshPhongMaterial({ color: 0x808080 });
     const rock = new THREE.Mesh(geometry, material);
     rock.position.set(x, y, z);
     rock.rotation.set(Math.random(), Math.random(), Math.random());
+    rock.scale.set(scale, scale, scale);
     rock.castShadow = true;
     rock.receiveShadow = true;
     scene.add(rock);
@@ -871,7 +852,7 @@ socket.on('worldObjects', (worldData) => {
 
     // Kayaları oluştur
     worldData.rocks.forEach(pos => {
-        createRock(pos.x, 0, pos.z);
+        createRock(pos.x, 0, pos.z, pos.scale || 1);
     });
 
     // CV noktalarını oluştur

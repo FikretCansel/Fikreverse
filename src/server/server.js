@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const path = require('path');
 const socketIO = require('socket.io');
+const WORLD_OBJECTS = require('./worldObjects');
 
 const app = express();
 const server = http.createServer(app);
@@ -38,54 +39,6 @@ const players = new Map();
 
 // Sabit spawn noktası
 const SPAWN_POINT = { x: 0, y: 2, z: 0 };
-
-// Sabit dünya nesneleri
-const WORLD_OBJECTS = {
-    trees: [
-        { x: -80, z: -80 },
-        { x: 60, z: 70 },
-        { x: -40, z: 90 },
-        // ...daha fazla ağaç koordinatı
-    ],
-    rocks: [
-        { x: -20, z: -30 },
-        { x: 45, z: -60 },
-        { x: -70, z: 40 },
-        // ...daha fazla kaya koordinatı
-    ],
-    cvPoints: [
-        {
-            position: { x: 0, z: 20 },
-            title: "İş Deneyimi - Featuremind",
-            content: "Frontend Engineer (Aug 2023 - Feb 2025)\n• B2C e-commerce platformu geliştirme\n• Next.js, TypeScript kullanımı\n• CMS, Dynamic Yield, Algolia entegrasyonları"
-        },
-        {
-            position: { x: 20, z: 20 },
-            title: "İş Deneyimi - Jotform",
-            content: "Frontend Engineer (Sep 2022 – Jun 2023)\n• Yeni uygulama geliştirme\n• Teknik sorunları çözme\n• JavaScript, React.js, Redux kullanımı"
-        },
-        {
-            position: { x: -20, z: 20 },
-            title: "Eğitim",
-            content: "Pamukkale Üniversitesi\nBilgisayar Mühendisliği\nOrtalama: 3.26/4"
-        },
-        {
-            position: { x: 0, z: -20 },
-            title: "Projeler",
-            content: "• Jetweb - Hızlı web sitesi yayınlama platformu\n• Rent A Car App - Araç kiralama sistemi\n• Unisome - Üniversite sosyal medya uygulaması\n• PCDrop - Dosya transfer uygulaması"
-        },
-        {
-            position: { x: 20, z: -20 },
-            title: "Yetenekler",
-            content: "• Next.js, React.js\n• HTML/CSS/JavaScript/TypeScript\n• Node.js, Express.js\n• React Native\n• Redux, Saga, Toolkit"
-        },
-        {
-            position: { x: -20, z: -20 },
-            title: "İletişim",
-            content: "Email: Fikretcansel25@gmail.com\nTelefon: +90 551 061 69 16\nGithub: github.com/FikretCansel\nWebsite: softfes.vercel.app/fikretcansel"
-        }
-    ]
-};
 
 io.on('connection', (socket) => {
     console.log('Oyuncu bağlandı:', socket.id);
