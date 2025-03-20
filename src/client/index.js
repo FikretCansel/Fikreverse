@@ -60,6 +60,38 @@ let playerName = '';
 
 let fikretMesh;
 let playerScore = 0;
+let playerId;
+
+function generatePlayerId() {
+    return 'player_' + Math.random().toString(36).substr(2, 9);
+}
+
+function createScoreBoard() {
+    const div = document.createElement('div');
+    div.id = 'scoreBoard';
+    div.style.position = 'fixed';
+    div.style.top = '20px';
+    div.style.right = '20px';
+    div.style.color = 'white';
+    div.style.fontFamily = 'Arial';
+    div.style.fontSize = '16px';
+    div.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    div.style.padding = '10px';
+    div.style.borderRadius = '5px';
+    div.style.zIndex = '100';
+    document.body.appendChild(div);
+}
+
+function updateScoreBoard(scores) {
+    const scoreBoard = document.getElementById('scoreBoard');
+    if (scoreBoard) {
+        let html = '<h3>En Yüksek Skorlar</h3>';
+        scores.forEach((score, index) => {
+            html += `${index + 1}. ${score.name}: ${score.score}<br>`;
+        });
+        scoreBoard.innerHTML = html;
+    }
+}
 
 init();
 animate();
@@ -117,11 +149,21 @@ async function init() {
     startButton.addEventListener('click', async () => {
         const name = playerNameInput.value.trim();
         if (name) {
+            // LocalStorage'dan playerId'yi kontrol et veya yeni oluştur
+            playerId = localStorage.getItem('playerId');
+            if (!playerId) {
+                playerId = generatePlayerId();
+                localStorage.setItem('playerId', playerId);
+            }
+
             // İsmi localStorage'a kaydet
             localStorage.setItem('playerName', name);
             playerName = name;
             loginForm.style.display = 'none';
             instructions.style.display = '';
+
+            // Skor tablosunu oluştur
+            createScoreBoard();
 
             // Video akışını başlat
             try {
@@ -144,7 +186,10 @@ async function init() {
                 setInterval(sendVideoFrame, VIDEO_UPDATE_RATE);
 
                 // Oyuncuyu sunucuya bildir ve oyunu başlat
-                socket.emit('playerJoin', playerName);
+                socket.emit('playerJoin', { 
+                    playerName: name,
+                    playerId: playerId
+                });
                 
                 // Oyuncu mesh'i oluştur
                 createPlayerMesh();
@@ -715,6 +760,10 @@ socket.on('scoreUpdated', (data) => {
         playerScore = data.score;
         updateScoreDisplay();
     }
+});
+
+socket.on('topScores', (scores) => {
+    updateScoreBoard(scores);
 });
 
 function addOtherPlayer(playerData) {

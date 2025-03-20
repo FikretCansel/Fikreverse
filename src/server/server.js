@@ -55,7 +55,8 @@ let fikretNPC = {
     id: 'fikret-npc'
 };
 
-const playerScores = new Map(); // Oyuncu puanlarını tutacak map
+// Oyuncu skorlarını saklamak için yapı
+const playerScores = new Map(); // {id: {name: string, score: number}}
 
 io.on('connection', (socket) => {
     console.log('Oyuncu bağlandı:', socket.id);
@@ -63,16 +64,27 @@ io.on('connection', (socket) => {
     // Dünya nesnelerini bağlanan oyuncuya gönder
     socket.emit('worldObjects', WORLD_OBJECTS);
 
-    socket.on('playerJoin', (playerName) => {
+    socket.on('playerJoin', (data) => {
+        const { playerName, playerId } = data;
+        // Mevcut skoru kontrol et veya yeni skor oluştur
+        const existingScore = playerScores.get(playerId) || { name: playerName, score: 0 };
+        
         // Yeni oyuncuyu sabit spawn noktasında oluştur
         players.set(socket.id, {
             id: socket.id,
+            playerId: playerId, // Kalıcı ID'yi ekle
             name: playerName,
             position: { ...SPAWN_POINT },
             rotation: { y: 0 },
             health: 100,
             lastDamageTime: 0,
-            score: 0 // Puan sistemi için yeni alan
+            score: existingScore.score // Mevcut skoru kullan
+        });
+
+        // Skor tablosunu güncelle
+        playerScores.set(playerId, {
+            name: playerName,
+            score: existingScore.score
         });
 
         // Mevcut oyuncuları yeni oyuncuya gönder
@@ -80,6 +92,18 @@ io.on('connection', (socket) => {
         
         // Fikret NPC'sinin pozisyonunu gönder
         socket.emit('fikretPosition', fikretNPC);
+        
+        // En yüksek skorları gönder
+        const topScores = Array.from(playerScores.entries())
+            .map(([id, data]) => ({
+                id,
+                name: data.name,
+                score: data.score
+            }))
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 5);
+        
+        io.emit('topScores', topScores);
         
         // Yeni oyuncuyu diğer oyunculara bildir
         socket.broadcast.emit('newPlayer', players.get(socket.id));
@@ -151,15 +175,33 @@ io.on('connection', (socket) => {
             // Oyuncunun puanını artır
             player.score = (player.score || 0) + 1;
             
+            // Kalıcı skorları güncelle
+            const playerData = playerScores.get(player.playerId);
+            if (playerData) {
+                playerData.score = player.score;
+                playerScores.set(player.playerId, playerData);
+            }
+            
             // Fikret'i yeni konuma taşı
             fikretNPC.position = getRandomPosition();
             
-            // Tüm oyunculara güncel pozisyonu ve puanı bildir
+            // En yüksek skorları hesapla
+            const topScores = Array.from(playerScores.entries())
+                .map(([id, data]) => ({
+                    id,
+                    name: data.name,
+                    score: data.score
+                }))
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 5);
+            
+            // Tüm oyunculara güncel pozisyonu, puanı ve en yüksek skorları bildir
             io.emit('fikretMoved', fikretNPC);
             io.emit('scoreUpdated', {
                 playerId: socket.id,
                 score: player.score
             });
+            io.emit('topScores', topScores);
         }
     });
 
