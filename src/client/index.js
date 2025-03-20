@@ -11,7 +11,10 @@ let canJump = false;
 let velocity = new THREE.Vector3();
 let isOnGround = false;
 const direction = new THREE.Vector3();
-const socket = io();
+const socket = io({
+    transports: ['websocket'],
+    upgrade: false
+});
 
 // Fizik değişkenleri
 const GRAVITY = -30;

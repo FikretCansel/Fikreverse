@@ -5,7 +5,15 @@ const socketIO = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIO(server);
+
+// Socket.IO ayarları
+const io = socketIO(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    },
+    transports: ['websocket']
+});
 
 app.use(express.static(path.join(__dirname, '../../public')));
 
