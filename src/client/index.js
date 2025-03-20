@@ -55,10 +55,18 @@ let videoContext;
 const videoTextures = new Map();
 const VIDEO_UPDATE_RATE = 100; // Her 100ms'de bir video güncellemesi
 
+let playerName = '';
+
 init();
 animate();
 
 async function init() {
+    // Login form kontrolü
+    const loginForm = document.getElementById('loginForm');
+    const startButton = document.getElementById('startButton');
+    const playerNameInput = document.getElementById('playerName');
+    const instructions = document.getElementById('instructions');
+
     // Sahne oluşturma
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87ceeb); // Gökyüzü mavisi
@@ -114,64 +122,108 @@ async function init() {
     // Kontroller
     controls = new PointerLockControls(camera, document.body);
 
-    const instructions = document.getElementById('instructions');
-    instructions.style.display = '';
+    instructions.style.display = 'none';
 
-    instructions.addEventListener('click', function () {
-        controls.lock();
+    startButton.addEventListener('click', async () => {
+        const name = playerNameInput.value.trim();
+        if (name) {
+            playerName = name;
+            loginForm.style.display = 'none';
+            instructions.style.display = '';
+
+            // Video akışını başlat
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: 320,
+                        height: 240,
+                        frameRate: { ideal: 10, max: 15 }
+                    }
+                });
+                document.getElementById('localVideo').srcObject = localStream;
+
+                // Video canvas'ı oluştur
+                videoCanvas = document.createElement('canvas');
+                videoCanvas.width = 320;
+                videoCanvas.height = 240;
+                videoContext = videoCanvas.getContext('2d');
+
+                // Video stream göndermeyi başlat
+                setInterval(sendVideoFrame, VIDEO_UPDATE_RATE);
+
+                // Oyuncuyu sunucuya bildir ve oyunu başlat
+                socket.emit('playerJoin', playerName);
+                
+                // Oyuncu mesh'i oluştur
+                createPlayerMesh();
+
+                // Başlangıç pozisyonunu yerden başlat
+                camera.position.y = PLAYER_HEIGHT;
+
+                // Hareket kontrolleri
+                document.addEventListener('keydown', onKeyDown);
+                document.addEventListener('keyup', onKeyUp);
+                document.addEventListener('mousedown', onMouseDown);
+
+                // Pencere yeniden boyutlandırma
+                window.addEventListener('resize', onWindowResize, false);
+
+                instructions.addEventListener('click', function () {
+                    controls.lock();
+                });
+
+                controls.addEventListener('lock', function () {
+                    instructions.style.display = 'none';
+                });
+
+                controls.addEventListener('unlock', function () {
+                    instructions.style.display = '';
+                });
+
+            } catch (err) {
+                console.error('Medya erişim hatası:', err);
+            }
+        }
     });
 
-    controls.addEventListener('lock', function () {
-        instructions.style.display = 'none';
-    });
-
-    controls.addEventListener('unlock', function () {
-        instructions.style.display = '';
+    playerNameInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            startButton.click();
+        }
     });
 
     // Mouse tıklaması ile pointer kilidini etkinleştir
     document.addEventListener('click', function() {
-        if (!controls.isLocked) {
+        if (!controls.isLocked && instructions.style.display === '') {
             controls.lock();
         }
     });
+}
 
-    // Hareket kontrolleri
-    document.addEventListener('keydown', onKeyDown);
-    document.addEventListener('keyup', onKeyUp);
-    document.addEventListener('mousedown', onMouseDown);
+function createNameTag(name) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d');
 
-    // Pencere yeniden boyutlandırma
-    window.addEventListener('resize', onWindowResize, false);
+    // İsim etiketi arka planı
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Oyuncu mesh'i oluştur
-    createPlayerMesh();
+    // İsim yazısı
+    ctx.font = '32px Arial';
+    ctx.fillStyle = 'white';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(name, canvas.width / 2, canvas.height / 2);
 
-    // Başlangıç pozisyonunu yerden başlat
-    camera.position.y = PLAYER_HEIGHT;
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.SpriteMaterial({ map: texture });
+    const sprite = new THREE.Sprite(material);
+    sprite.scale.set(2, 0.5, 1);
+    sprite.position.y = 6; // Karakterin üstünde konumlandır
 
-    // Video akışını başlat
-    try {
-        localStream = await navigator.mediaDevices.getUserMedia({ 
-            video: { 
-                width: 320,
-                height: 240,
-                frameRate: { ideal: 10, max: 15 }
-            }
-        });
-        document.getElementById('localVideo').srcObject = localStream;
-
-        // Video canvas'ı oluştur
-        videoCanvas = document.createElement('canvas');
-        videoCanvas.width = 320;
-        videoCanvas.height = 240;
-        videoContext = videoCanvas.getContext('2d');
-
-        // Video stream göndermeyi başlat
-        setInterval(sendVideoFrame, VIDEO_UPDATE_RATE);
-    } catch (err) {
-        console.error('Kamera erişim hatası:', err);
-    }
+    return sprite;
 }
 
 function createPlayerMesh() {
@@ -248,6 +300,10 @@ function createPlayerMesh() {
     // Video paneli ekle
     const videoPanel = createVideoPanel();
     character.add(videoPanel);
+
+    // İsim etiketi ekle
+    const nameTag = createNameTag(playerName);
+    character.add(nameTag);
 
     playerMesh = character;
     scene.add(playerMesh);
@@ -679,6 +735,10 @@ function addOtherPlayer(playerData) {
     // Video paneli ekle
     const videoPanel = createVideoPanel();
     character.add(videoPanel);
+
+    // İsim etiketi ekle
+    const nameTag = createNameTag(playerData.name);
+    character.add(nameTag);
 
     // Pozisyonu ayarla ve karakteri yukarı kaldır
     const position = new THREE.Vector3(

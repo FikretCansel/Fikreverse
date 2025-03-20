@@ -40,9 +40,45 @@
         #remoteVideos {
             display: none; /* Video dokuları için gizli video elementleri */
         }
+        #loginForm {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            font-family: Arial;
+            text-align: center;
+            z-index: 1000;
+        }
+        #loginForm input {
+            margin: 10px;
+            padding: 5px;
+            width: 200px;
+        }
+        #loginForm button {
+            margin: 10px;
+            padding: 8px 20px;
+            background: #4CAF50;
+            border: none;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #loginForm button:hover {
+            background: #45a049;
+        }
     </style>
 </head>
 <body>
+    <div id="loginForm">
+        <h2>Oyuna Katıl</h2>
+        <input type="text" id="playerName" placeholder="İsminizi girin" maxlength="15">
+        <br>
+        <button id="startButton">Başla</button>
+    </div>
     <div id="health">Sağlık: 100</div>
     <div id="instructions">
         <h2>Kontroller</h2>

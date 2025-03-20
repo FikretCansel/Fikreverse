@@ -42,19 +42,22 @@ const SPAWN_POINT = { x: 0, y: 2, z: 0 };
 io.on('connection', (socket) => {
     console.log('Oyuncu bağlandı:', socket.id);
     
-    // Yeni oyuncuyu sabit spawn noktasında oluştur
-    players.set(socket.id, {
-        id: socket.id,
-        position: { ...SPAWN_POINT },
-        rotation: { y: 0 }, // Rotasyon bilgisini ekledik
-        health: 100
-    });
+    socket.on('playerJoin', (playerName) => {
+        // Yeni oyuncuyu sabit spawn noktasında oluştur
+        players.set(socket.id, {
+            id: socket.id,
+            name: playerName,
+            position: { ...SPAWN_POINT },
+            rotation: { y: 0 },
+            health: 100
+        });
 
-    // Mevcut oyuncuları yeni oyuncuya gönder
-    socket.emit('currentPlayers', Array.from(players.values()));
-    
-    // Yeni oyuncuyu diğer oyunculara bildir
-    socket.broadcast.emit('newPlayer', players.get(socket.id));
+        // Mevcut oyuncuları yeni oyuncuya gönder
+        socket.emit('currentPlayers', Array.from(players.values()));
+        
+        // Yeni oyuncuyu diğer oyunculara bildir
+        socket.broadcast.emit('newPlayer', players.get(socket.id));
+    });
 
     // Video stream olayı
     socket.on('video-stream', (imageData) => {
