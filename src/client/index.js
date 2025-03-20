@@ -11,6 +11,7 @@ let canJump = false;
 let velocity = new THREE.Vector3();
 let isOnGround = false;
 const direction = new THREE.Vector3();
+const scoreSound = new Audio('gulme.m4a');
 const socket = io({
     path: '/socket.io/',
     transports: ['websocket', 'polling'],
@@ -796,7 +797,12 @@ socket.on('fikretMoved', (data) => {
 
 socket.on('scoreUpdated', (data) => {
     if (data.playerId === socket.id) {
+        const oldScore = playerScore;
         playerScore = data.score;
+        if (playerScore > oldScore) {
+            scoreSound.currentTime = 0;
+            scoreSound.play();
+        }
         updateScoreDisplay();
     }
 });
