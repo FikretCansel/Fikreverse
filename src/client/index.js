@@ -809,3 +809,73 @@ socket.on('video-stream', (data) => {
         image.src = data.imageData;
     }
 });
+
+function createCVPoint(position, title, content) {
+    const group = new THREE.Group();
+
+    // Stand (direk)
+    const standGeometry = new THREE.CylinderGeometry(0.1, 0.1, 4);
+    const standMaterial = new THREE.MeshPhongMaterial({ color: 0x8B4513 });
+    const stand = new THREE.Mesh(standGeometry, standMaterial);
+    stand.position.y = 2;
+    group.add(stand);
+
+    // Panel
+    const panelGeometry = new THREE.PlaneGeometry(4, 3);
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 384;
+    const ctx = canvas.getContext('2d');
+
+    // Panel arkaplanı
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Başlık
+    ctx.fillStyle = '#4CAF50';
+    ctx.font = 'bold 36px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(title, canvas.width/2, 50);
+
+    // İçerik
+    ctx.fillStyle = 'white';
+    ctx.font = '24px Arial';
+    const lines = content.split('\n');
+    lines.forEach((line, index) => {
+        ctx.fillText(line, canvas.width/2, 100 + (index * 30));
+    });
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const panelMaterial = new THREE.MeshBasicMaterial({ 
+        map: texture,
+        transparent: true,
+        side: THREE.DoubleSide
+    });
+    const panel = new THREE.Mesh(panelGeometry, panelMaterial);
+    panel.position.y = 4;
+    group.add(panel);
+
+    // Pozisyonu ayarla
+    group.position.set(position.x, 0, position.z);
+    scene.add(group);
+
+    return group;
+}
+
+// Socket.io olaylarına yeni event ekle
+socket.on('worldObjects', (worldData) => {
+    // Ağaçları oluştur
+    worldData.trees.forEach(pos => {
+        createTree(pos.x, 0, pos.z);
+    });
+
+    // Kayaları oluştur
+    worldData.rocks.forEach(pos => {
+        createRock(pos.x, 0, pos.z);
+    });
+
+    // CV noktalarını oluştur
+    worldData.cvPoints.forEach(point => {
+        createCVPoint(point.position, point.title, point.content);
+    });
+});
