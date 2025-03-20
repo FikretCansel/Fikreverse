@@ -154,6 +154,31 @@ io.on('connection', (socket) => {
 
             // Sağlık 0 veya altına düştüyse ölüm durumu
             if (target.health <= 0 && target.name !== 'fikretbaba') {
+                // Ölen oyuncunun puanını azalt
+                const playerData = playerScores.get(target.playerId);
+                if (playerData) {
+                    playerData.score = Math.max(0, playerData.score - 2); // Minimum 0 olacak şekilde 2 puan azalt
+                    playerScores.set(target.playerId, playerData);
+                    
+                    // Yeni skoru oyuncuya bildir
+                    io.emit('scoreUpdated', {
+                        playerId: targetId,
+                        score: playerData.score
+                    });
+
+                    // En yüksek skorları güncelle ve gönder
+                    const topScores = Array.from(playerScores.entries())
+                        .map(([id, data]) => ({
+                            id,
+                            name: data.name,
+                            score: data.score
+                        }))
+                        .sort((a, b) => b.score - a.score)
+                        .slice(0, 5);
+                    
+                    io.emit('topScores', topScores);
+                }
+
                 io.emit('playerDied', {
                     id: targetId,
                     name: target.name
