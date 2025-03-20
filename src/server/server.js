@@ -6,18 +6,30 @@ const socketIO = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 
+// Express middleware for WebSocket headers
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    next();
+});
+
 // Socket.IO ayarları
 const io = socketIO(server, {
     cors: {
         origin: "*",
         methods: ["GET", "POST"],
-        credentials: true,
-        allowedHeaders: ["content-type"]
+        credentials: true
     },
-    transports: ['websocket', 'polling'],
+    path: '/socket.io/',
+    transports: ['polling', 'websocket'],
     allowEIO3: true,
-    pingTimeout: 20000,
-    pingInterval: 25000
+    maxHttpBufferSize: 1e8,
+    pingTimeout: 60000,
+    pingInterval: 25000,
+    upgradeTimeout: 30000,
+    allowUpgrades: true
 });
 
 app.use(express.static(path.join(__dirname, '../../public')));

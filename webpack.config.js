@@ -23,6 +23,12 @@ module.exports = {
     },
     devServer: {
         contentBase: './public',
-        port: 3000
+        port: 3000,
+        proxy: {
+            '/socket.io': {
+                target: 'http://localhost:3000',
+                ws: true
+            }
+        }
     }
 };

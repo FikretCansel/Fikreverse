@@ -12,14 +12,17 @@ let velocity = new THREE.Vector3();
 let isOnGround = false;
 const direction = new THREE.Vector3();
 const socket = io({
-    transports: ['websocket', 'polling'],
+    path: '/socket.io/',
+    transports: ['polling', 'websocket'],
     upgrade: true,
     rememberUpgrade: true,
-    secure: true,
     reconnection: true,
-    reconnectionAttempts: 5,
+    reconnectionAttempts: Infinity,
     reconnectionDelay: 1000,
-    timeout: 20000
+    reconnectionDelayMax: 5000,
+    timeout: 20000,
+    autoConnect: true,
+    forceNew: true
 });
 
 // Bağlantı durumunu kontrol et

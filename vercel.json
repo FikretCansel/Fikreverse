@@ -13,7 +13,13 @@
   "routes": [
     {
       "src": "/socket.io/(.*)",
-      "dest": "src/server/server.js"
+      "dest": "src/server/server.js",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
+        "Access-Control-Allow-Headers": "Origin, X-Requested-With, Content-Type, Accept",
+        "Access-Control-Allow-Credentials": "true"
+      }
     },
     {
       "src": "/public/(.*)",
