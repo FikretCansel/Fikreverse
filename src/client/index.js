@@ -359,7 +359,6 @@ function createRock(x, y, z, scale = 1) {
     const material = new THREE.MeshPhongMaterial({ color: 0x808080 });
     const rock = new THREE.Mesh(geometry, material);
     rock.position.set(x, y, z);
-    rock.rotation.set(Math.random(), Math.random(), Math.random());
     rock.scale.set(scale, scale, scale);
     rock.castShadow = true;
     rock.receiveShadow = true;
