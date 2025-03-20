@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>Fantastik Evren</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         body { margin: 0; }
         canvas { display: block; }
@@ -123,10 +124,10 @@
         Space: Zıpla<br>
         E: Fikret ile etkileşim</p>
         <p>Başlamak için tıkla</p>
-        <p>Not: Oyuna başlamak için kamera izni vermeniz gerekiyor</p>
+        <p>Not: Kamera izni verirseniz diğer oyuncular sizi görebilir</p>
     </div>
     <video id="localVideo" autoplay muted playsinline></video>
-    <div id="remoteVideos"></div>
+    <div id="remoteVideos"></div>    
     <script src="/socket.io/socket.io.js"></script>
     <script src="bundle.js"></script>
 </body>

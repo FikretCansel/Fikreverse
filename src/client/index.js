@@ -165,7 +165,7 @@ async function init() {
             // Skor tablosunu oluştur
             createScoreBoard();
 
-            // Video akışını başlat
+            // Video akışını başlatmayı dene ama hata olursa devam et
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
@@ -184,42 +184,42 @@ async function init() {
 
                 // Video stream göndermeyi başlat
                 setInterval(sendVideoFrame, VIDEO_UPDATE_RATE);
-
-                // Oyuncuyu sunucuya bildir ve oyunu başlat
-                socket.emit('playerJoin', { 
-                    playerName: name,
-                    playerId: playerId
-                });
-                
-                // Oyuncu mesh'i oluştur
-                createPlayerMesh();
-
-                // Başlangıç pozisyonunu yerden başlat
-                camera.position.y = PLAYER_HEIGHT;
-
-                // Hareket kontrolleri
-                document.addEventListener('keydown', onKeyDown);
-                document.addEventListener('keyup', onKeyUp);
-                document.addEventListener('mousedown', onMouseDown);
-
-                // Pencere yeniden boyutlandırma
-                window.addEventListener('resize', onWindowResize, false);
-
-                instructions.addEventListener('click', function () {
-                    controls.lock();
-                });
-
-                controls.addEventListener('lock', function () {
-                    instructions.style.display = 'none';
-                });
-
-                controls.addEventListener('unlock', function () {
-                    instructions.style.display = '';
-                });
-
             } catch (err) {
-                console.error('Medya erişim hatası:', err);
+                console.log('Kamera erişimi reddedildi veya kullanılamıyor - oyun kamerasız devam edecek');
+                document.getElementById('localVideo').style.display = 'none';
             }
+
+            // Oyuncuyu sunucuya bildir ve oyunu başlat
+            socket.emit('playerJoin', { 
+                playerName: name,
+                playerId: playerId
+            });
+            
+            // Oyuncu mesh'i oluştur
+            createPlayerMesh();
+
+            // Başlangıç pozisyonunu yerden başlat
+            camera.position.y = PLAYER_HEIGHT;
+
+            // Hareket kontrolleri
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+            document.addEventListener('mousedown', onMouseDown);
+
+            // Pencere yeniden boyutlandırma
+            window.addEventListener('resize', onWindowResize, false);
+
+            instructions.addEventListener('click', function () {
+                controls.lock();
+            });
+
+            controls.addEventListener('lock', function () {
+                instructions.style.display = 'none';
+            });
+
+            controls.addEventListener('unlock', function () {
+                instructions.style.display = '';
+            });
         }
     });
 
@@ -237,6 +237,45 @@ async function init() {
     });
 
     updateScoreDisplay(); // Puan göstergesini oluştur
+
+    // Mobil kontrol tuşları için dokunma olayları
+    const mobileButtons = {
+        btnW: document.getElementById('btnW'),
+        btnA: document.getElementById('btnA'),
+        btnS: document.getElementById('btnS'),
+        btnD: document.getElementById('btnD')
+    };
+
+    // Dokunma başladığında
+    Object.entries(mobileButtons).forEach(([key, btn]) => {
+        btn.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Varsayılan dokunma davranışını engelle
+            switch(key) {
+                case 'btnW': moveForward = true; break;
+                case 'btnS': moveBackward = true; break;
+                case 'btnA': moveLeft = true; break;
+                case 'btnD': moveRight = true; break;
+            }
+        });
+
+        // Dokunma bittiğinde
+        btn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            switch(key) {
+                case 'btnW': moveForward = false; break;
+                case 'btnS': moveBackward = false; break;
+                case 'btnA': moveLeft = false; break;
+                case 'btnD': moveRight = false; break;
+            }
+        });
+    });
+
+    // Mobil cihazlarda otomatik pointer kilidi
+    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        instructions.addEventListener('touchstart', () => {
+            controls.lock();
+        });
+    }
 }
 
 function createNameTag(name) {

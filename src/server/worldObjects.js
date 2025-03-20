@@ -53,7 +53,7 @@ const WORLD_OBJECTS = {
     ],
     cvPoints: [
         {
-            position: { x: 0, z: 20 },
+            position: { x: 20, z: 30 },
             title: "İş Deneyimi - Featuremind",
             content: "Frontend Engineer (Aug 2023 - Feb 2025)\n• B2C e-commerce platformu geliştirme\n• Next.js, TypeScript kullanımı\n• CMS, Dynamic Yield, Algolia entegrasyonları"
         },
