@@ -41,8 +41,8 @@ socket.on('disconnect', (reason) => {
 // Fizik değişkenleri
 const GRAVITY = -30;
 const JUMP_FORCE = 12;
-const WALK_SPEED = 150; // Hızı artırdık
-const FRICTION = 5.0;  // Sürtünmeyi azalttık
+const WALK_SPEED = 200; // Hızı artırdım
+const FRICTION = 3.0;
 const PLAYER_HEIGHT = 2;
 const raycaster = new THREE.Raycaster();
 
