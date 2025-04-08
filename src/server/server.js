@@ -59,7 +59,7 @@ let fikretNPC = {
 const playerScores = new Map(); // {id: {name: string, score: number}}
 
 io.on('connection', (socket) => {
-    console.log('Oyuncu bağlandı:', socket.id);
+    // console.log('Oyuncu bağlandı:', socket.id);
     
     // Dünya nesnelerini bağlanan oyuncuya gönder
     socket.emit('worldObjects', WORLD_OBJECTS);
@@ -251,7 +251,7 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         clearInterval(healthRegenInterval);
-        console.log('Oyuncu ayrıldı:', socket.id);
+        // console.log('Oyuncu ayrıldı:', socket.id);
         players.delete(socket.id);
         io.emit('playerDisconnected', socket.id);
     });

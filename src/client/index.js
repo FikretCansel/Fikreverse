@@ -27,15 +27,15 @@ const socket = io({
 
 // Bağlantı durumunu kontrol et
 socket.on('connect', () => {
-    console.log('Socket.IO bağlantısı kuruldu');
+    // console.log('Socket.IO bağlantısı kuruldu');
 });
 
 socket.on('connect_error', (error) => {
-    console.error('Socket.IO bağlantı hatası:', error);
+    // console.error('Socket.IO bağlantı hatası:', error);
 });
 
 socket.on('disconnect', (reason) => {
-    console.log('Socket.IO bağlantısı kesildi:', reason);
+    // console.log('Socket.IO bağlantısı kesildi:', reason);
 });
 
 // Fizik değişkenleri
@@ -187,7 +187,7 @@ async function init() {
                 // Video stream göndermeyi başlat
                 setInterval(sendVideoFrame, VIDEO_UPDATE_RATE);
             } catch (err) {
-                console.log('Kamera erişimi reddedildi veya kullanılamıyor - oyun kamerasız devam edecek');
+                // console.log('Kamera erişimi reddedildi veya kullanılamıyor - oyun kamerasız devam edecek');
                 document.getElementById('localVideo').style.display = 'none';
             }
 
@@ -778,7 +778,7 @@ socket.on('playerDied', (data) => {
         window.location.reload();
     } else {
         // Başka bir oyuncu öldüyse bildir
-        console.log(`${data.name} öldü!`);
+        // console.log(`${data.name} öldü!`);
     }
 });
 
