@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls';
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 // Temel değişkenler
 let camera, scene, renderer, controls;
@@ -60,7 +60,7 @@ const VIDEO_UPDATE_RATE = 100; // Her 100ms'de bir video güncellemesi
 
 let playerName = '';
 
-let fikretMesh;
+let fikretMesh = null; // Global değişken olarak tanımla
 let playerScore = 0;
 let playerId;
 
@@ -791,9 +791,12 @@ socket.on('fikretPosition', (data) => {
 
 socket.on('fikretMoved', (data) => {
     if (fikretMesh) {
-        scene.remove(fikretMesh);
+        // Sadece pozisyonu güncelle, modeli tekrar yükleme
+        fikretMesh.position.set(data.position.x, data.position.y, data.position.z);
+    } else {
+        // Eğer Fikret henüz yüklenmemişse, oluştur
+        fikretMesh = createFikretNPC(data.position);
     }
-    fikretMesh = createFikretNPC(data.position);
 });
 
 socket.on('scoreUpdated', (data) => {
@@ -1021,15 +1024,23 @@ socket.on('worldObjects', (worldData) => {
 
 // Fikret NPC'sini oluştur
 function createFikretNPC(position) {
+    if (fikretMesh) {
+        // Eğer Fikret zaten yüklenmişse, sadece pozisyonunu güncelle
+        fikretMesh.position.set(position.x, position.y, position.z);
+        return fikretMesh;
+    }
+
+    // İlk kez yükleme yapılıyorsa
     const group = new THREE.Group();
+    
+    // GLTFLoader oluştur
+    const loader = new GLTFLoader();
 
-    // FBX Loader oluştur
-    const loader = new FBXLoader();
-
-    // FBX modelini yükle
-    loader.load('/fikret/fikret.fbx', (object) => {
-        object.scale.set(0.02, 0.02, 0.02);
-        group.add(object);
+    // GLB modelini yükle
+    loader.load('/fikret/fikret.glb', (gltf) => {
+        const model = gltf.scene;
+        model.scale.set(2.0, 2.0, 2.0);
+        group.add(model);
 
         // İsim etiketi ekle
         const nameTag = createNameTag("Fikret (E ile etkileşim)");
@@ -1040,7 +1051,8 @@ function createFikretNPC(position) {
     // Pozisyonu ayarla
     group.position.set(position.x, position.y, position.z);
     scene.add(group);
-
+    
+    fikretMesh = group; // Global değişkene kaydet
     return group;
 }
 
