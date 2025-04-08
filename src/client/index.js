@@ -282,7 +282,7 @@ async function init() {
 
 function createNameTag(name) {
     const canvas = document.createElement('canvas');
-    canvas.width = 512; // Genişliği 256'dan 512'ye çıkardım
+    canvas.width = 400;
     canvas.height = 64;
     const ctx = canvas.getContext('2d');
 
@@ -301,7 +301,7 @@ function createNameTag(name) {
     const material = new THREE.SpriteMaterial({ map: texture });
     const sprite = new THREE.Sprite(material);
     sprite.scale.set(4, 0.5, 1); // X ölçeğini 2'den 4'e çıkardım
-    sprite.position.y = 2.5; // Y pozisyonunu daha önce düşürdüğümüz gibi bırakıyorum
+    sprite.position.y = 4;
 
     return sprite;
 }
