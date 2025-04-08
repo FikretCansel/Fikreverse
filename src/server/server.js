@@ -43,9 +43,9 @@ const SPAWN_POINT = { x: 0, y: 2, z: 0 };
 // Fikret NPC'sinin pozisyonunu rastgele belirle
 function getRandomPosition() {
     return {
-        x: -150 + Math.random() * 300,
+        x: Math.floor(Math.random() * 201) - 100,
         y: 2,
-        z: -150 + Math.random() * 300
+        z: Math.floor(Math.random() * 201) - 100
     };
 }
 

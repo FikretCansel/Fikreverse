@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls';
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
 
 // Temel değişkenler
 let camera, scene, renderer, controls;
@@ -281,7 +282,7 @@ async function init() {
 
 function createNameTag(name) {
     const canvas = document.createElement('canvas');
-    canvas.width = 256;
+    canvas.width = 512; // Genişliği 256'dan 512'ye çıkardım
     canvas.height = 64;
     const ctx = canvas.getContext('2d');
 
@@ -299,8 +300,8 @@ function createNameTag(name) {
     const texture = new THREE.CanvasTexture(canvas);
     const material = new THREE.SpriteMaterial({ map: texture });
     const sprite = new THREE.Sprite(material);
-    sprite.scale.set(2, 0.5, 1);
-    sprite.position.y = 6; // Karakterin üstünde konumlandır
+    sprite.scale.set(4, 0.5, 1); // X ölçeğini 2'den 4'e çıkardım
+    sprite.position.y = 2.5; // Y pozisyonunu daha önce düşürdüğümüz gibi bırakıyorum
 
     return sprite;
 }
@@ -1020,32 +1021,27 @@ socket.on('worldObjects', (worldData) => {
 
 // Fikret NPC'sini oluştur
 function createFikretNPC(position) {
-    const character = new THREE.Group();
-    character.scale.set(0.5, 0.5, 0.5);
+    const group = new THREE.Group();
 
-    // Vücut (parlak turuncu kostüm)
-    const bodyGeometry = new THREE.BoxGeometry(1.5, 2, 1);
-    const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0xFF6600 });
-    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-    body.position.y = 2;
-    character.add(body);
+    // FBX Loader oluştur
+    const loader = new FBXLoader();
 
-    // Kafa (altın rengi)
-    const headGeometry = new THREE.SphereGeometry(0.5, 16, 16);
-    const headMaterial = new THREE.MeshPhongMaterial({ color: 0xFFD700 });
-    const head = new THREE.Mesh(headGeometry, headMaterial);
-    head.position.y = 3.25;
-    character.add(head);
+    // FBX modelini yükle
+    loader.load('/fikret/fikret.fbx', (object) => {
+        object.scale.set(0.02, 0.02, 0.02);
+        group.add(object);
 
-    // İsim etiketi
-    const nameTag = createNameTag("Fikret (E ile etkileşim)");
-    character.add(nameTag);
+        // İsim etiketi ekle
+        const nameTag = createNameTag("Fikret (E ile etkileşim)");
+        nameTag.position.y = 2.5;
+        group.add(nameTag);
+    });
 
     // Pozisyonu ayarla
-    character.position.set(position.x, position.y, position.z);
-    scene.add(character);
+    group.position.set(position.x, position.y, position.z);
+    scene.add(group);
 
-    return character;
+    return group;
 }
 
 // Puan göstergesini güncelle
